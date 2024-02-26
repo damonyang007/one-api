@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
@@ -226,6 +227,12 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 		if err != nil {
 			return err
 		}
+	} else {
+		//2024-02-06 无线额度下令牌额度不累加计算
+		err = DecreaseTokenQuotaLimite(tokenId, quota)
+		if err != nil {
+			return err
+		}
 	}
 	err = DecreaseUserQuota(token.UserId, quota)
 	return err
@@ -250,6 +257,59 @@ func PostConsumeTokenQuota(tokenId int, quota int) (err error) {
 		if err != nil {
 			return err
 		}
+	} else {
+		//2024-02-06 无线额度下令牌额度不累加计算
+		if quota > 0 {
+			err = DecreaseTokenQuotaLimite(tokenId, quota)
+		} else {
+			err = IncreaseTokenQuotaLimite(tokenId, -quota)
+		}
+		if err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+// 2024-02-06 无线额度下令牌额度不累加计算
+func IncreaseTokenQuotaLimite(id int, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	if config.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeTokenQuota, id, quota)
+		return nil
+	}
+	return increaseTokenQuotaLimite(id, quota)
+}
+
+func increaseTokenQuotaLimite(id int, quota int) (err error) {
+	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"used_quota":    gorm.Expr("used_quota - ?", quota),
+			"accessed_time": helper.GetTimestamp(),
+		},
+	).Error
+	return err
+}
+
+func DecreaseTokenQuotaLimite(id int, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	if config.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeTokenQuota, id, -quota)
+		return nil
+	}
+	return decreaseTokenQuotaLimite(id, quota)
+}
+
+func decreaseTokenQuotaLimite(id int, quota int) (err error) {
+	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"used_quota":    gorm.Expr("used_quota + ?", quota),
+			"accessed_time": helper.GetTimestamp(),
+		},
+	).Error
+	return err
 }
