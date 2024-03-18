@@ -30,7 +30,7 @@ func GetAllUserTokens(userId int, startIdx int, num int, order string) ([]*Token
 	var tokens []*Token
 	var err error
 	query := DB.Where("user_id = ?", userId)
-	
+
 	switch order {
 	case "remain_quota":
 		query = query.Order("unlimited_quota desc, remain_quota desc")
@@ -39,7 +39,7 @@ func GetAllUserTokens(userId int, startIdx int, num int, order string) ([]*Token
 	default:
 		query = query.Order("id desc")
 	}
-	
+
 	err = query.Limit(num).Offset(startIdx).Find(&tokens).Error
 	return tokens, err
 }
@@ -284,7 +284,7 @@ func PostConsumeTokenQuota(tokenId int, quota int64) (err error) {
 }
 
 // 2024-02-06 无线额度下令牌额度不累加计算
-func IncreaseTokenQuotaLimite(id int, quota int) (err error) {
+func IncreaseTokenQuotaLimite(id int, quota int64) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
@@ -292,7 +292,7 @@ func IncreaseTokenQuotaLimite(id int, quota int) (err error) {
 		addNewRecord(BatchUpdateTypeTokenQuota, id, quota)
 		return nil
 	}
-	return increaseTokenQuotaLimite(id, quota)
+	return increaseTokenQuotaLimite(id, int(quota))
 }
 
 func increaseTokenQuotaLimite(id int, quota int) (err error) {
@@ -305,7 +305,7 @@ func increaseTokenQuotaLimite(id int, quota int) (err error) {
 	return err
 }
 
-func DecreaseTokenQuotaLimite(id int, quota int) (err error) {
+func DecreaseTokenQuotaLimite(id int, quota int64) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
@@ -313,7 +313,7 @@ func DecreaseTokenQuotaLimite(id int, quota int) (err error) {
 		addNewRecord(BatchUpdateTypeTokenQuota, id, -quota)
 		return nil
 	}
-	return decreaseTokenQuotaLimite(id, quota)
+	return decreaseTokenQuotaLimite(id, int(quota))
 }
 
 func decreaseTokenQuotaLimite(id int, quota int) (err error) {
