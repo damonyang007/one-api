@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"fmt"
+
 	"github.com/songquanpeng/one-api/common"
 	"github.com/songquanpeng/one-api/common/config"
 	"github.com/songquanpeng/one-api/common/helper"
@@ -101,6 +102,11 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		tx = tx.Where("channel_id = ?", channel)
 	}
 	err = tx.Order("id desc").Limit(num).Offset(startIdx).Find(&logs).Error
+	return logs, err
+}
+
+func GetAllLogsNoPaging() (logs []*Log, err error) {
+	err = LOG_DB.Order("id desc").Find(&logs).Error
 	return logs, err
 }
 
