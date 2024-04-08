@@ -11,7 +11,7 @@ resources:
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '7b6564fe-04fe-4e1d-9202-38995b9f3c11'
-  imageRepository: 'oneapi'
+  imageRepository: 'one-api'
   containerRegistry: 'fastgptdemo.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
